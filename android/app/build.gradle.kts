@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "uz.uygon.uygon"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
