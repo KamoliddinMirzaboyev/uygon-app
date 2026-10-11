@@ -1,13 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n.dart';
 import 'theme.dart';
 
-/// Animated splash: the sun rises over the horizon, rays fan out and the
-/// name fades in. Continues the native (static) splash seamlessly.
+/// Animated splash that continues the native splash seamlessly: the same
+/// brand image stays in place, a warm glow pulses behind it and the name and
+/// tagline fade in underneath.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key, required this.onFinished});
 
@@ -34,35 +33,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
+  double _interval(
+    double v,
+    double from,
+    double to, [
+    Curve curve = Curves.easeOut,
+  ]) => curve.transform(((v - from) / (to - from)).clamp(0.0, 1.0));
+
   @override
   Widget build(BuildContext context) {
     final t = ref.watch(l10nProvider);
+    final size = MediaQuery.sizeOf(context);
+    final logo = size.shortestSide * 0.62;
     return Scaffold(
-      backgroundColor: Colors.black,
+      // Same colour as the native splash so the hand-over is invisible.
+      backgroundColor: const Color(0xFF16171B),
       body: AnimatedBuilder(
         animation: _c,
         builder: (context, _) {
           final v = _c.value;
-          final text = Curves.easeOut.transform(
-            ((v - 0.55) / 0.35).clamp(0, 1),
-          );
-          final tag = Curves.easeOut.transform(((v - 0.7) / 0.3).clamp(0, 1));
+          final glow = _interval(v, 0.0, 0.6);
+          final scale = 1 + 0.07 * _interval(v, 0.0, 1.0, Curves.easeInOut);
+          final name = _interval(v, 0.45, 0.8);
+          final tag = _interval(v, 0.6, 0.95);
           return Stack(
+            alignment: Alignment.center,
             children: [
-              Positioned.fill(child: CustomPaint(painter: _SunPainter(v))),
+              // Warm glow behind the logo.
+              Container(
+                width: logo * 1.9,
+                height: logo * 1.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      kAccent.withValues(alpha: 0.30 * glow),
+                      kAccent.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: scale,
+                child: Image.asset(
+                  'assets/brand/splash.png',
+                  width: logo,
+                  height: logo,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
               Align(
-                alignment: const Alignment(0, 0.45),
+                alignment: const Alignment(0, 0.52),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Opacity(
-                      opacity: text,
+                      opacity: name,
                       child: Transform.translate(
-                        offset: Offset(0, (1 - text) * 16),
+                        offset: Offset(0, (1 - name) * 14),
                         child: Text(
                           t('appName'),
                           style: const TextStyle(
-                            fontSize: 44,
+                            fontSize: 40,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1,
                           ),
@@ -89,101 +121,4 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
   }
-}
-
-class _SunPainter extends CustomPainter {
-  _SunPainter(this.v);
-
-  final double v; // 0..1
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final horizon = size.height * 0.40;
-    final r = min(size.width, size.height) * 0.16;
-
-    final rise = Curves.easeOutCubic.transform((v / 0.6).clamp(0, 1));
-    final glow = Curves.easeIn.transform((v / 0.8).clamp(0, 1));
-    final cy = horizon + r * (1 - rise) * 1.25; // starts below the horizon
-
-    // Glow behind the sun.
-    final glowRect = Rect.fromCircle(
-      center: Offset(cx, horizon),
-      radius: r * 3.4,
-    );
-    canvas.drawCircle(
-      Offset(cx, horizon),
-      r * 3.4,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [
-            kAccent.withValues(alpha: 0.55 * glow),
-            kAccent.withValues(alpha: 0),
-          ],
-        ).createShader(glowRect),
-    );
-
-    // Everything above the horizon only.
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, horizon));
-
-    // Rays fan out one after another.
-    const rays = 9;
-    for (var i = 0; i < rays; i++) {
-      final start = 0.45 + i * 0.03;
-      final p = Curves.easeOutBack.transform(((v - start) / 0.3).clamp(0, 1));
-      if (p <= 0) continue;
-      final a = pi * (1 + (i + 0.5) / rays);
-      final from = Offset(cx + cos(a) * r * 1.3, horizon + sin(a) * r * 1.3);
-      final to = Offset(
-        cx + cos(a) * r * (1.3 + 0.55 * p),
-        horizon + sin(a) * r * (1.3 + 0.55 * p),
-      );
-      canvas.drawLine(
-        from,
-        to,
-        Paint()
-          ..color = const Color(0xFFFFB840).withValues(alpha: p.clamp(0, 1))
-          ..strokeWidth = r * 0.11
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    canvas.drawCircle(
-      Offset(cx, cy),
-      r,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFFFC043), kAccent],
-        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
-    );
-    canvas.restore();
-
-    // Horizon lines.
-    final line = Curves.easeOut.transform((v / 0.5).clamp(0, 1));
-    final w = r * 4.2 * line;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(cx, horizon + 6), width: w, height: 5),
-        const Radius.circular(3),
-      ),
-      Paint()..color = Colors.white.withValues(alpha: 0.9),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(cx, horizon + 22),
-          width: w * 0.6,
-          height: 5,
-        ),
-        const Radius.circular(3),
-      ),
-      Paint()..color = Colors.white.withValues(alpha: 0.4),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SunPainter old) => old.v != v;
 }

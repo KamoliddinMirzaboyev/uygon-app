@@ -8,10 +8,10 @@ class ShakeDetector {
     double threshold = 10.0,
     Duration minGap = const Duration(milliseconds: 250),
   }) : _peaks = PeakDetector(
-          threshold: threshold,
-          minGap: minGap,
-          onPeak: onShake,
-        );
+         threshold: threshold,
+         minGap: minGap,
+         onPeak: onShake,
+       );
 
   final PeakDetector _peaks;
 

@@ -257,8 +257,8 @@ class _AlarmTile extends ConsumerWidget {
     final text = d > 0
         ? t('ringsInDM', {'d': d, 'h': h, 'm': m})
         : h > 0
-            ? t('ringsInHM', {'h': h, 'm': m})
-            : t('ringsInM', {'m': total});
+        ? t('ringsInHM', {'h': h, 'm': m})
+        : t('ringsInM', {'m': total});
     return t('ringsIn', {'t': text});
   }
 
