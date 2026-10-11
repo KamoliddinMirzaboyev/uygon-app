@@ -33,3 +33,44 @@ class UninstallProtection {
   static Future<bool> disable() async =>
       await _channel.invokeMethod<bool>('disable') ?? false;
 }
+
+/// Whether this build ships the optional uninstall-protection feature. The
+/// Google Play build leaves it out (store policy); the direct APK has it.
+const kUninstallProtectionAvailable = bool.fromEnvironment(
+  'UNINSTALL_PROTECTION',
+  defaultValue: false,
+);
+
+/// Short "ratchet" tick + haptic used by the time wheel.
+class UiFeedback {
+  static const _channel = MethodChannel('uz.uygon/feedback');
+  static var _flip = false;
+
+  static Future<void> tick() async {
+    HapticFeedback.selectionClick();
+    _flip = !_flip;
+    try {
+      // Alternate the pitch a little so fast scrolling sounds like a ratchet.
+      await _channel.invokeMethod('tick', {'rate': _flip ? 1.0 : 1.12});
+    } catch (_) {
+      /* sound is optional */
+    }
+  }
+}
+
+/// Battery-optimisation state and settings shortcut.
+class SystemSettings {
+  static const _channel = MethodChannel('uz.uygon/system');
+
+  static Future<bool> isUnrestricted() async =>
+      await _channel.invokeMethod<bool>('batteryUnrestricted') ?? false;
+
+  static Future<bool> canScheduleExact() async =>
+      await _channel.invokeMethod<bool>('canScheduleExact') ?? true;
+
+  static Future<void> openExactAlarmSettings() =>
+      _channel.invokeMethod('openExactAlarmSettings');
+
+  static Future<void> openSettings() =>
+      _channel.invokeMethod('openSystemSettings');
+}

@@ -4,6 +4,10 @@ An alarm you cannot just swipe away. The alarm keeps ringing until you solve a
 challenge: **Math**, **Shake**, **Typing**, **QR code**, **Barcode** or **Walk (e.g. 50 m)**. Uzbek is the primary language,
 English the fallback. Dark Material 3 UI by default.
 
+## Builds
+Two flavors: `play` (Google Play, no uninstall-protection admin) and `direct` (APK for sharing).
+Release guide, store texts and graphics: see `store/README.md`.
+
 ## Setup
 
 ```bash

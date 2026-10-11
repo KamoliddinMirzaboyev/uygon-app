@@ -446,8 +446,12 @@ class _AlarmEditScreenState extends ConsumerState<AlarmEditScreen> {
                 mode: CupertinoDatePickerMode.time,
                 use24hFormat: true,
                 initialDateTime: initial,
-                onDateTimeChanged: (d) =>
-                    _set(_a.copyWith(hour: d.hour, minute: d.minute)),
+                onDateTimeChanged: (d) {
+                  if (d.hour != _a.hour || d.minute != _a.minute) {
+                    UiFeedback.tick();
+                  }
+                  _set(_a.copyWith(hour: d.hour, minute: d.minute));
+                },
               ),
             ),
           ),

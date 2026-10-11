@@ -37,7 +37,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
     await Permissions.requestAll();
-    await Permissions.requestBattery();
     widget.onDone();
   }
 

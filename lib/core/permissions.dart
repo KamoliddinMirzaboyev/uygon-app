@@ -1,5 +1,7 @@
 import 'package:permission_handler/permission_handler.dart';
 
+import 'native_channels.dart';
+
 class PermissionState {
   const PermissionState({
     required this.notifications,
@@ -12,14 +14,17 @@ class PermissionState {
   final bool battery;
 
   bool get allGranted => notifications && exactAlarm && battery;
+
+  /// Without these the alarm cannot ring reliably; battery is only advice.
+  bool get criticalGranted => notifications && exactAlarm;
 }
 
 class Permissions {
   static Future<PermissionState> check() async => PermissionState(
     notifications: await Permission.notification.isGranted,
     // Below Android 12 this permission does not exist and reports granted.
-    exactAlarm: await Permission.scheduleExactAlarm.isGranted,
-    battery: await Permission.ignoreBatteryOptimizations.isGranted,
+    exactAlarm: await SystemSettings.canScheduleExact(),
+    battery: await SystemSettings.isUnrestricted(),
   );
 
   static Future<void> requestNotifications() async {
@@ -28,18 +33,19 @@ class Permissions {
   }
 
   /// Opens the system "Alarms & reminders" screen on Android 12+.
-  static Future<void> requestExactAlarm() async {
-    await Permission.scheduleExactAlarm.request();
-  }
+  static Future<void> requestExactAlarm() =>
+      SystemSettings.openExactAlarmSettings();
 
-  static Future<void> requestBattery() async {
-    await Permission.ignoreBatteryOptimizations.request();
-  }
+  /// Opens the system battery-optimisation list (the app has to be set to
+  /// "Unrestricted" / "Not optimised" there).
+  static Future<void> requestBattery() => SystemSettings.openSettings();
 
   /// Asks for everything that is cheap to ask for, in order. Called from
   /// the home screen on first launch.
   static Future<void> requestAll() async {
     await Permission.notification.request();
-    await Permission.scheduleExactAlarm.request();
+    if (!await SystemSettings.canScheduleExact()) {
+      await SystemSettings.openExactAlarmSettings();
+    }
   }
 }

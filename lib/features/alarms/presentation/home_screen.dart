@@ -106,7 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
               ),
             ),
-            if (perms != null && !perms.allGranted)
+            if (perms != null && !perms.criticalGranted)
               _PermissionBanner(
                 t: t,
                 onFix: () async {
@@ -114,7 +114,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     await Permissions.requestNotifications();
                   }
                   if (!perms.exactAlarm) await Permissions.requestExactAlarm();
-                  if (!perms.battery) await Permissions.requestBattery();
                   await _refresh();
                 },
               ),
@@ -210,28 +209,60 @@ class _PermissionBanner extends StatelessWidget {
   final VoidCallback onFix;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      color: scheme.errorContainer,
-      child: ListTile(
-        leading: Icon(
-          Icons.warning_amber_rounded,
-          color: scheme.onErrorContainer,
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+    padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+    decoration: BoxDecoration(
+      color: kAccent.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: kAccent.withValues(alpha: 0.35)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.notifications_active_outlined,
+              color: kAccent,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                t('permBannerTitle'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
-        title: Text(
-          t('permBannerTitle'),
-          style: TextStyle(color: scheme.onErrorContainer),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 32, right: 8),
+          child: Text(
+            t('permBannerBody'),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
         ),
-        subtitle: Text(
-          t('permBannerBody'),
-          style: TextStyle(color: scheme.onErrorContainer),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: onFix,
+            child: Text(
+              t('fix'),
+              style: kOrangeText.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
         ),
-        trailing: FilledButton(onPressed: onFix, child: Text(t('fix'))),
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }
 
 class _AlarmTile extends ConsumerWidget {

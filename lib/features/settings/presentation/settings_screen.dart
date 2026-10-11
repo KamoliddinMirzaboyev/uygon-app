@@ -215,30 +215,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
             ],
           ),
-          SectionLabel(t('protection')),
-          GroupCard(
-            children: [
-              GroupRow(
-                title: t('protection'),
-                chevron: false,
-                trailing: IosSwitch(
-                  value: _protected,
-                  onChanged: (v) => _toggleProtection(v, t),
+          if (kUninstallProtectionAvailable) ...[
+            SectionLabel(t('protection')),
+            GroupCard(
+              children: [
+                GroupRow(
+                  title: t('protection'),
+                  chevron: false,
+                  trailing: IosSwitch(
+                    value: _protected,
+                    onChanged: (v) => _toggleProtection(v, t),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 6, 16, 0),
+              child: Text(
+                t('protectionSub'),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.5),
                 ),
               ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 6, 16, 0),
-            child: Text(
-              t('protectionSub'),
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurface
-                    .withValues(alpha: 0.5),
-              ),
             ),
-          ),
+          ],
           SectionLabel(t('permissions')),
           if (perms != null)
             GroupCard(
@@ -260,6 +262,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   t('permBattery'),
                   perms.battery,
                   Permissions.requestBattery,
+                  actionLabel: t('openIt'),
                 ),
               ],
             ),
@@ -272,8 +275,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     L10n t,
     String title,
     bool granted,
-    Future<void> Function() ask,
-  ) => GroupRow(
+    Future<void> Function() ask, {
+    String? actionLabel,
+  }) => GroupRow(
     title: title,
     chevron: false,
     trailing: granted
@@ -283,7 +287,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               await ask();
               await _load();
             },
-            child: Text(t('grant'), style: kOrangeText),
+            child: Text(actionLabel ?? t('grant'), style: kOrangeText),
           ),
   );
 }

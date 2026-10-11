@@ -56,3 +56,9 @@ app.*.map.json
 # Build and scratch outputs
 *.apk
 scratch_*
+
+# Signing secrets
+key.properties
+*.jks
+*.keystore
+*.aab

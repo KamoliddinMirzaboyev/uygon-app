@@ -254,7 +254,17 @@ class _RingScreenState extends ConsumerState<RingScreen>
                             _PulsingBell(color: scheme.primary),
                             const SizedBox(height: 8),
                             Text(
-                              DateFormat('HH:mm').format(_now),
+                              DateFormat('HH:mm').format(
+                                widget.preview && alarm != null
+                                    ? DateTime(
+                                        2000,
+                                        1,
+                                        1,
+                                        alarm.hour,
+                                        alarm.minute,
+                                      )
+                                    : _now,
+                              ),
                               style: Theme.of(context).textTheme.displayLarge
                                   ?.copyWith(
                                     fontSize: 96,
