@@ -52,3 +52,7 @@ app.*.map.json
 .kotlin/
 **/android/.kotlin/
 **/android/.gradle/
+
+# Build and scratch outputs
+*.apk
+scratch_*
