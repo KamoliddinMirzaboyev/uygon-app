@@ -80,9 +80,8 @@ class _ShakeChallengeState extends ConsumerState<ShakeChallenge> {
                   Icon(Icons.vibration, size: 48, color: scheme.primary),
                   Text(
                     '${widget.count - _shakes}',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                    style: Theme.of(context).textTheme.displayMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ],
               ),

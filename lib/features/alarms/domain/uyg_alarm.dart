@@ -18,6 +18,8 @@ class UygAlarm {
     this.challenge = ChallengeType.math,
     this.difficulty = Difficulty.easy,
     this.shakeCount = 30,
+    this.walkMeters = 50,
+    this.scanValue,
     this.ringtone = '${kBuiltInPrefix}siren',
     this.snoozeMinutes = 5,
     this.maxSnoozes = 2,
@@ -35,12 +37,23 @@ class UygAlarm {
   final ChallengeType challenge;
   final Difficulty difficulty;
   final int shakeCount;
+  final int walkMeters;
+
+  /// Registered QR / barcode content the user must scan to dismiss.
+  final String? scanValue;
   final String ringtone;
 
   /// 0 disables snooze.
   final int snoozeMinutes;
   final int maxSnoozes;
   final bool wakeCheck;
+
+  /// Challenge actually used at ring time: scan challenges fall back to math
+  /// when no code was registered, so the user is never locked out.
+  ChallengeType get effectiveChallenge =>
+      challenge.needsScan && (scanValue == null || scanValue!.isEmpty)
+      ? ChallengeType.math
+      : challenge;
 
   bool get isRepeating => days.isNotEmpty;
   bool get snoozeAllowed => snoozeMinutes > 0 && maxSnoozes > 0;
@@ -54,26 +67,29 @@ class UygAlarm {
     ChallengeType? challenge,
     Difficulty? difficulty,
     int? shakeCount,
+    int? walkMeters,
+    String? scanValue,
     String? ringtone,
     int? snoozeMinutes,
     int? maxSnoozes,
     bool? wakeCheck,
-  }) =>
-      UygAlarm(
-        id: id,
-        hour: hour ?? this.hour,
-        minute: minute ?? this.minute,
-        label: label ?? this.label,
-        days: days ?? this.days,
-        enabled: enabled ?? this.enabled,
-        challenge: challenge ?? this.challenge,
-        difficulty: difficulty ?? this.difficulty,
-        shakeCount: shakeCount ?? this.shakeCount,
-        ringtone: ringtone ?? this.ringtone,
-        snoozeMinutes: snoozeMinutes ?? this.snoozeMinutes,
-        maxSnoozes: maxSnoozes ?? this.maxSnoozes,
-        wakeCheck: wakeCheck ?? this.wakeCheck,
-      );
+  }) => UygAlarm(
+    id: id,
+    hour: hour ?? this.hour,
+    minute: minute ?? this.minute,
+    label: label ?? this.label,
+    days: days ?? this.days,
+    enabled: enabled ?? this.enabled,
+    challenge: challenge ?? this.challenge,
+    difficulty: difficulty ?? this.difficulty,
+    shakeCount: shakeCount ?? this.shakeCount,
+    walkMeters: walkMeters ?? this.walkMeters,
+    scanValue: scanValue ?? this.scanValue,
+    ringtone: ringtone ?? this.ringtone,
+    snoozeMinutes: snoozeMinutes ?? this.snoozeMinutes,
+    maxSnoozes: maxSnoozes ?? this.maxSnoozes,
+    wakeCheck: wakeCheck ?? this.wakeCheck,
+  );
 
   /// The next moment this alarm should fire, or null if it is disabled.
   /// For repeating alarms use [nextOccurrenceOn] per weekday.
@@ -106,36 +122,40 @@ class UygAlarm {
   }
 
   Map<String, Object?> toJson() => {
-        'id': id,
-        'hour': hour,
-        'minute': minute,
-        'label': label,
-        'days': days.toList(),
-        'enabled': enabled,
-        'challenge': challenge.name,
-        'difficulty': difficulty.name,
-        'shakeCount': shakeCount,
-        'ringtone': ringtone,
-        'snoozeMinutes': snoozeMinutes,
-        'maxSnoozes': maxSnoozes,
-        'wakeCheck': wakeCheck,
-      };
+    'id': id,
+    'hour': hour,
+    'minute': minute,
+    'label': label,
+    'days': days.toList(),
+    'enabled': enabled,
+    'challenge': challenge.name,
+    'difficulty': difficulty.name,
+    'shakeCount': shakeCount,
+    'walkMeters': walkMeters,
+    'scanValue': scanValue,
+    'ringtone': ringtone,
+    'snoozeMinutes': snoozeMinutes,
+    'maxSnoozes': maxSnoozes,
+    'wakeCheck': wakeCheck,
+  };
 
   factory UygAlarm.fromJson(Map<dynamic, dynamic> j) => UygAlarm(
-        id: j['id'] as int,
-        hour: j['hour'] as int,
-        minute: j['minute'] as int,
-        label: (j['label'] as String?) ?? '',
-        days: ((j['days'] as List?) ?? const []).cast<int>().toSet(),
-        enabled: (j['enabled'] as bool?) ?? true,
-        challenge: ChallengeType.values.asNameMap()[j['challenge']] ??
-            ChallengeType.math,
-        difficulty:
-            Difficulty.values.asNameMap()[j['difficulty']] ?? Difficulty.easy,
-        shakeCount: (j['shakeCount'] as int?) ?? 30,
-        ringtone: (j['ringtone'] as String?) ?? kSystemSound,
-        snoozeMinutes: (j['snoozeMinutes'] as int?) ?? 5,
-        maxSnoozes: (j['maxSnoozes'] as int?) ?? 2,
-        wakeCheck: (j['wakeCheck'] as bool?) ?? false,
-      );
+    id: j['id'] as int,
+    hour: j['hour'] as int,
+    minute: j['minute'] as int,
+    label: (j['label'] as String?) ?? '',
+    days: ((j['days'] as List?) ?? const []).cast<int>().toSet(),
+    enabled: (j['enabled'] as bool?) ?? true,
+    challenge:
+        ChallengeType.values.asNameMap()[j['challenge']] ?? ChallengeType.math,
+    difficulty:
+        Difficulty.values.asNameMap()[j['difficulty']] ?? Difficulty.easy,
+    shakeCount: (j['shakeCount'] as int?) ?? 30,
+    walkMeters: (j['walkMeters'] as int?) ?? 50,
+    scanValue: j['scanValue'] as String?,
+    ringtone: (j['ringtone'] as String?) ?? kSystemSound,
+    snoozeMinutes: (j['snoozeMinutes'] as int?) ?? 5,
+    maxSnoozes: (j['maxSnoozes'] as int?) ?? 2,
+    wakeCheck: (j['wakeCheck'] as bool?) ?? false,
+  );
 }

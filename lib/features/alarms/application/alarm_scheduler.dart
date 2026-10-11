@@ -68,9 +68,7 @@ class AlarmScheduler {
   /// each app start: it never touches an alarm that is currently ringing or
   /// already armed for the future.
   Future<void> reconcile(List<UygAlarm> alarms, L10n t) async {
-    final armed = {
-      for (final s in await Alarm.getAlarms()) s.id: s,
-    };
+    final armed = {for (final s in await Alarm.getAlarms()) s.id: s};
     final now = DateTime.now();
     for (final a in alarms) {
       if (!a.enabled) continue;
@@ -101,20 +99,33 @@ class AlarmScheduler {
   }
 
   Future<void> scheduleSnooze(UygAlarm a, int snoozesUsed, L10n t) => _set(
-        a,
-        idFor(a.id, snoozeSlot),
-        DateTime.now().add(Duration(minutes: a.snoozeMinutes)),
-        t,
-        payload: RingPayload(a.id, RingKind.snooze, snoozesUsed + 1),
-      );
+    a,
+    idFor(a.id, snoozeSlot),
+    DateTime.now().add(Duration(minutes: a.snoozeMinutes)),
+    t,
+    payload: RingPayload(a.id, RingKind.snooze, snoozesUsed + 1),
+  );
+
+  /// Re-arms the ring that was just muted. Uses the snooze slot so the weekly
+  /// slot stays free for next week's alarm. Returns the native id used.
+  Future<int> scheduleReRing(
+    UygAlarm a,
+    RingPayload payload,
+    Duration delay,
+    L10n t,
+  ) async {
+    final id = idFor(a.id, snoozeSlot);
+    await _set(a, id, DateTime.now().add(delay), t, payload: payload);
+    return id;
+  }
 
   Future<void> scheduleWakeCheck(UygAlarm a, int delayMinutes, L10n t) => _set(
-        a,
-        idFor(a.id, checkSlot),
-        DateTime.now().add(Duration(minutes: delayMinutes)),
-        t,
-        payload: RingPayload(a.id, RingKind.check),
-      );
+    a,
+    idFor(a.id, checkSlot),
+    DateTime.now().add(Duration(minutes: delayMinutes)),
+    t,
+    payload: RingPayload(a.id, RingKind.check),
+  );
 
   Future<void> _set(
     UygAlarm a,
@@ -144,6 +155,7 @@ class AlarmScheduler {
         fadeDuration: const Duration(seconds: 3),
         volume: 1.0,
         volumeEnforced: true,
+        showSystemUI: false,
       ),
       notificationSettings: NotificationSettings(
         title: title,

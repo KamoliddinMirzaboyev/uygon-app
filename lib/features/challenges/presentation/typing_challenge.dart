@@ -53,21 +53,21 @@ class _TypingChallengeState extends ConsumerState<TypingChallenge> {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Text.rich(
-              TextSpan(children: [
-                TextSpan(
-                  text: _target.substring(0, ok.clamp(0, _target.length)),
-                  style: TextStyle(color: scheme.primary),
-                ),
-                TextSpan(
-                  text: _target.substring(ok.clamp(0, _target.length)),
-                  style: TextStyle(
-                    color: hasError ? scheme.error : scheme.onSurface,
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: _target.substring(0, ok.clamp(0, _target.length)),
+                    style: TextStyle(color: scheme.primary),
                   ),
-                ),
-              ]),
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
+                  TextSpan(
+                    text: _target.substring(ok.clamp(0, _target.length)),
+                    style: TextStyle(
+                      color: hasError ? scheme.error : scheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              style: Theme.of(context).textTheme.headlineSmall
                   ?.copyWith(fontWeight: FontWeight.w600, height: 1.35),
               textAlign: TextAlign.center,
             ),

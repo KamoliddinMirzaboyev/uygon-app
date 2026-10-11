@@ -99,12 +99,24 @@ class _MathChallengeState extends ConsumerState<MathChallenge>
             ),
             child: child,
           ),
-          child: Text(
-            '${_q.text} = ?',
-            style: Theme.of(context)
-                .textTheme
-                .displayMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, anim) => FadeTransition(
+              opacity: anim,
+              child: SlideTransition(
+                position: Tween(
+                  begin: const Offset(0.3, 0),
+                  end: Offset.zero,
+                ).animate(anim),
+                child: child,
+              ),
+            ),
+            child: Text(
+              '${_q.text} = ?',
+              key: ValueKey(_q.text),
+              style: Theme.of(context).textTheme.displayMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
         ),
         const SizedBox(height: 8),

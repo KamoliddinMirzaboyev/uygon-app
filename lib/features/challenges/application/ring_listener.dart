@@ -31,15 +31,19 @@ class RingListener {
       _shownNativeId = null;
     }
     if (_shownNativeId != null || set.alarms.isEmpty) return;
+    // A ring screen is already open (e.g. re-ring after a mute): reuse it.
+    if (RingScreen.open.value > 0) return;
     final alarm = set.alarms.first;
     final payload = RingPayload.decode(alarm.payload);
     if (payload == null) return;
     _shownNativeId = alarm.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      navigatorKey.currentState?.push(MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => RingScreen(nativeId: alarm.id, payload: payload),
-      ));
+      navigatorKey.currentState?.push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => RingScreen(nativeId: alarm.id, payload: payload),
+        ),
+      );
     });
   }
 }

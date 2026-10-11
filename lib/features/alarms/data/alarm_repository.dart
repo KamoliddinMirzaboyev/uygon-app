@@ -5,11 +5,12 @@ class AlarmRepository {
   static const _counterKey = 'nextAlarmId';
 
   List<UygAlarm> all() {
-    final list = Storage.alarms.values
-        .whereType<Map>()
-        .map(UygAlarm.fromJson)
-        .toList()
-      ..sort((a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute));
+    final list =
+        Storage.alarms.values.whereType<Map>().map(UygAlarm.fromJson).toList()
+          ..sort(
+            (a, b) =>
+                (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute),
+          );
     return list;
   }
 

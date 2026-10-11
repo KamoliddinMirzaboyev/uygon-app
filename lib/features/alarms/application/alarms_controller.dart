@@ -32,13 +32,21 @@ class AlarmsController extends Notifier<List<UygAlarm>> {
     );
   }
 
-  Future<void> upsert(UygAlarm a) async {
+  /// Saves and arms the alarm. Returns false if the system refused to
+  /// schedule it (e.g. exact-alarm permission revoked).
+  Future<bool> upsert(UygAlarm a) async {
     await _repo.save(a);
-    await _scheduler.schedule(a, _t);
+    var ok = true;
+    try {
+      await _scheduler.schedule(a, _t);
+    } catch (_) {
+      ok = false;
+    }
     state = _repo.all();
+    return ok;
   }
 
-  Future<void> toggle(UygAlarm a, bool enabled) =>
+  Future<bool> toggle(UygAlarm a, bool enabled) =>
       upsert(a.copyWith(enabled: enabled));
 
   Future<void> remove(UygAlarm a) async {
@@ -49,7 +57,11 @@ class AlarmsController extends Notifier<List<UygAlarm>> {
 
   /// Re-arms anything the OS may have lost. Called on startup and resume.
   Future<void> reconcile() async {
-    await _scheduler.reconcile(_repo.all(), _t);
+    try {
+      await _scheduler.reconcile(_repo.all(), _t);
+    } catch (_) {
+      /* retried on next resume */
+    }
     state = _repo.all();
   }
 
@@ -62,5 +74,6 @@ class AlarmsController extends Notifier<List<UygAlarm>> {
   }
 }
 
-final alarmsProvider =
-    NotifierProvider<AlarmsController, List<UygAlarm>>(AlarmsController.new);
+final alarmsProvider = NotifierProvider<AlarmsController, List<UygAlarm>>(
+  AlarmsController.new,
+);

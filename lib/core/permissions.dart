@@ -16,11 +16,11 @@ class PermissionState {
 
 class Permissions {
   static Future<PermissionState> check() async => PermissionState(
-        notifications: await Permission.notification.isGranted,
-        // Below Android 12 this permission does not exist and reports granted.
-        exactAlarm: await Permission.scheduleExactAlarm.isGranted,
-        battery: await Permission.ignoreBatteryOptimizations.isGranted,
-      );
+    notifications: await Permission.notification.isGranted,
+    // Below Android 12 this permission does not exist and reports granted.
+    exactAlarm: await Permission.scheduleExactAlarm.isGranted,
+    battery: await Permission.ignoreBatteryOptimizations.isGranted,
+  );
 
   static Future<void> requestNotifications() async {
     final s = await Permission.notification.request();

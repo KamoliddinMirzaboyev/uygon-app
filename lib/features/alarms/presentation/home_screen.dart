@@ -1,12 +1,17 @@
+import 'package:alarm/alarm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/animations.dart';
+import '../../../core/ios_widgets.dart';
 import '../../../core/l10n.dart';
+import '../../../core/theme.dart';
 import '../../../core/permissions.dart';
 import '../../settings/presentation/settings_screen.dart';
 import '../application/alarms_controller.dart';
 import '../domain/uyg_alarm.dart';
 import 'alarm_edit_screen.dart';
+import '../../challenges/domain/challenge_icons.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -27,7 +32,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Future<void> _bootstrap() async {
-    await Permissions.requestAll();
+    // Never put a permission dialog on top of a ringing alarm.
+    if (!await Alarm.isRinging()) await Permissions.requestAll();
     await _refresh();
   }
 
@@ -51,9 +57,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Future<void> _open(UygAlarm? alarm) async {
     final target = alarm ?? await ref.read(alarmsProvider.notifier).create();
     if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => AlarmEditScreen(alarm: target, isNew: alarm == null),
-    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AlarmEditScreen(alarm: target, isNew: alarm == null),
+      ),
+    );
   }
 
   @override
@@ -62,58 +70,137 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final alarms = ref.watch(alarmsProvider);
     final perms = _perms;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(t('appName')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _open(null),
-        icon: const Icon(Icons.add),
-        label: Text(t('newAlarm')),
-      ),
-      body: Column(
-        children: [
-          if (perms != null && !perms.allGranted)
-            _PermissionBanner(
-              t: t,
-              onFix: () async {
-                if (!perms.notifications) await Permissions.requestNotifications();
-                if (!perms.exactAlarm) await Permissions.requestExactAlarm();
-                if (!perms.battery) await Permissions.requestBattery();
-                await _refresh();
-              },
-            ),
-          Expanded(
-            child: alarms.isEmpty
-                ? Center(
-                    child: Text(
-                      t('noAlarms'),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    itemCount: alarms.length,
-                    itemBuilder: (_, i) => _AlarmTile(
-                      key: ValueKey(alarms[i].id),
-                      alarm: alarms[i],
-                      t: t,
-                      onTap: () => _open(alarms[i]),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.settings_outlined, color: kAccent),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsScreen(),
+                      ),
                     ),
                   ),
-          ),
-        ],
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: kAccent, size: 32),
+                    onPressed: () => _open(null),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  t('alarms'),
+                  style: const TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            if (perms != null && !perms.allGranted)
+              _PermissionBanner(
+                t: t,
+                onFix: () async {
+                  if (!perms.notifications) {
+                    await Permissions.requestNotifications();
+                  }
+                  if (!perms.exactAlarm) await Permissions.requestExactAlarm();
+                  if (!perms.battery) await Permissions.requestBattery();
+                  await _refresh();
+                },
+              ),
+            Expanded(
+              child: alarms.isEmpty
+                  ? _EmptyState(t: t, onAdd: () => _open(null))
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),
+                      itemCount: alarms.length,
+                      itemBuilder: (_, i) => FadeSlideIn(
+                        key: ValueKey(alarms[i].id),
+                        delay: Duration(milliseconds: 60 * i.clamp(0, 8)),
+                        child: _AlarmTile(
+                          alarm: alarms[i],
+                          t: t,
+                          onTap: () => _open(alarms[i]),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.t, required this.onAdd});
+
+  final L10n t;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: FadeSlideIn(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.6, end: 1),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.elasticOut,
+              builder: (_, v, child) => Transform.scale(scale: v, child: child),
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: kAccent.withValues(alpha: 0.15),
+                ),
+                child: const Icon(Icons.alarm_add, size: 54, color: kAccent),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              t('emptyTitle'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t('emptyBody'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onAdd,
+              style: FilledButton.styleFrom(
+                backgroundColor: kAccent,
+                foregroundColor: Colors.black,
+                minimumSize: const Size(0, 50),
+              ),
+              icon: const Icon(Icons.add),
+              label: Text(t('addFirst')),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _PermissionBanner extends StatelessWidget {
@@ -126,14 +213,21 @@ class _PermissionBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       color: scheme.errorContainer,
       child: ListTile(
-        leading: Icon(Icons.warning_amber_rounded, color: scheme.onErrorContainer),
-        title: Text(t('permBannerTitle'),
-            style: TextStyle(color: scheme.onErrorContainer)),
-        subtitle: Text(t('permBannerBody'),
-            style: TextStyle(color: scheme.onErrorContainer)),
+        leading: Icon(
+          Icons.warning_amber_rounded,
+          color: scheme.onErrorContainer,
+        ),
+        title: Text(
+          t('permBannerTitle'),
+          style: TextStyle(color: scheme.onErrorContainer),
+        ),
+        subtitle: Text(
+          t('permBannerBody'),
+          style: TextStyle(color: scheme.onErrorContainer),
+        ),
         trailing: FilledButton(onPressed: onFix, child: Text(t('fix'))),
       ),
     );
@@ -141,12 +235,7 @@ class _PermissionBanner extends StatelessWidget {
 }
 
 class _AlarmTile extends ConsumerWidget {
-  const _AlarmTile({
-    super.key,
-    required this.alarm,
-    required this.t,
-    required this.onTap,
-  });
+  const _AlarmTile({required this.alarm, required this.t, required this.onTap});
 
   final UygAlarm alarm;
   final L10n t;
@@ -163,21 +252,17 @@ class _AlarmTile extends ConsumerWidget {
   String _countdown() {
     final next = alarm.nextOccurrence();
     if (next == null) return t('alarmDisabled');
-    final diff = next.difference(DateTime.now());
-    final d = diff.inDays, h = diff.inHours % 24, m = diff.inMinutes % 60 + 1;
+    final total = (next.difference(DateTime.now()).inSeconds / 60).ceil();
+    final d = total ~/ 1440, h = (total % 1440) ~/ 60, m = total % 60;
     final text = d > 0
         ? t('ringsInDM', {'d': d, 'h': h, 'm': m})
-        : diff.inHours > 0
-            ? t('ringsInHM', {'h': diff.inHours, 'm': m})
-            : t('ringsInM', {'m': m});
+        : h > 0
+            ? t('ringsInHM', {'h': h, 'm': m})
+            : t('ringsInM', {'m': total});
     return t('ringsIn', {'t': text});
   }
 
-  IconData get _icon => switch (alarm.challenge.name) {
-        'math' => Icons.calculate_outlined,
-        'shake' => Icons.vibration,
-        _ => Icons.keyboard_outlined,
-      };
+  IconData get _icon => challengeIcon(alarm.challenge);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -185,72 +270,106 @@ class _AlarmTile extends ConsumerWidget {
     final time =
         '${alarm.hour.toString().padLeft(2, '0')}:${alarm.minute.toString().padLeft(2, '0')}';
     final dim = !alarm.enabled;
+    final subtitle = [
+      if (alarm.label.isNotEmpty) alarm.label else t('labelHint'),
+      _repeatText(),
+    ].join(', ');
     return Dismissible(
       key: ValueKey('dismiss${alarm.id}'),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Icon(Icons.delete_outline, color: scheme.onErrorContainer),
+        color: Colors.red,
+        child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      onDismissed: (_) => ref.read(alarmsProvider.notifier).remove(alarm),
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AnimatedOpacity(
-                    opacity: dim ? 0.45 : 1,
-                    duration: const Duration(milliseconds: 250),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          time,
-                          style: Theme.of(context)
-                              .textTheme
-                              .displaySmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          [
-                            if (alarm.label.isNotEmpty) alarm.label,
-                            _repeatText(),
-                          ].join(' · '),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(children: [
-                          Icon(_icon, size: 16, color: scheme.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            _countdown(),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ]),
-                      ],
-                    ),
-                  ),
+      confirmDismiss: (_) async =>
+          await showDialog<bool>(
+            context: context,
+            builder: (c) => AlertDialog(
+              title: Text(t('deleteConfirm')),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(c, false),
+                  child: Text(t('cancel'), style: kOrangeText),
                 ),
-                Switch(
-                  value: alarm.enabled,
-                  onChanged: (v) =>
-                      ref.read(alarmsProvider.notifier).toggle(alarm, v),
+                TextButton(
+                  onPressed: () => Navigator.pop(c, true),
+                  child: Text(
+                    t('delete'),
+                    style: const TextStyle(color: Colors.red, fontSize: 17),
+                  ),
                 ),
               ],
             ),
+          ) ??
+          false,
+      onDismissed: (_) {
+        ref.read(alarmsProvider.notifier).remove(alarm);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(t('deleted'))));
+      },
+      child: Column(
+        children: [
+          InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: dim ? 0.4 : 1,
+                      duration: const Duration(milliseconds: 250),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            time,
+                            style: const TextStyle(
+                              fontSize: 58,
+                              fontWeight: FontWeight.w200,
+                              height: 1.05,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  subtitle,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(_icon, size: 16, color: kAccent),
+                            ],
+                          ),
+                          if (alarm.enabled)
+                            Text(
+                              _countdown(),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: scheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  IosSwitch(
+                    value: alarm.enabled,
+                    onChanged: (v) =>
+                        ref.read(alarmsProvider.notifier).toggle(alarm, v),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+          const Divider(indent: 20),
+        ],
       ),
     );
   }
