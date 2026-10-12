@@ -1,7 +1,5 @@
 package uz.uygon.uygon
 
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.RingtoneManager
@@ -28,7 +26,6 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        val admin = ComponentName(this, UygonAdminReceiver::class.java)
 
         // Low-latency "ratchet" tick for the time wheel (SoundPool, UI sound
         // usage so it follows the media/touch volume, not the alarm volume).
@@ -131,26 +128,12 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
-        val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.uygon/protection")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "isActive" -> result.success(dpm.isAdminActive(admin))
-                    "enable" -> {
-                        startActivity(
-                            Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
-                                .putExtra(
-                                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                                    "Ilovani o'chirib tashlashni qiyinlashtiradi."
-                                )
-                        )
-                        result.success(null)
-                    }
-                    "disable" -> {
-                        dpm.removeActiveAdmin(admin)
-                        result.success(dpm.isAdminActive(admin))
-                    }
+                    "isActive" -> result.success(false)
+                    "enable" -> result.success(null)
+                    "disable" -> result.success(false)
                     else -> result.notImplemented()
                 }
             }

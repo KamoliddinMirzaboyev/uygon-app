@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- No policies: the admin exists only so that Android requires it to be
-     deactivated in Settings before the app can be uninstalled. -->
-<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-policies />
-</device-admin>
