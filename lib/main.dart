@@ -11,5 +11,5 @@ Future<void> main() async {
   await Storage.init();
   await seedDemoData(); // no-op unless built with SEED_DEMO
   await Alarm.init();
-  runApp(const ProviderScope(child: UygonApp()));
+  runApp(const ProviderScope(child: WakyApp()));
 }

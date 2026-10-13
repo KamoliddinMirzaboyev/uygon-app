@@ -12,6 +12,7 @@ import '../../alarms/application/alarms_controller.dart';
 import '../../alarms/domain/uyg_alarm.dart';
 import '../../settings/application/settings_controller.dart';
 import '../../../core/ios_widgets.dart';
+import '../../../core/native_channels.dart';
 import '../../../core/theme.dart';
 import '../domain/challenge_type.dart';
 import 'math_challenge.dart';
@@ -79,10 +80,19 @@ class _RingScreenState extends ConsumerState<RingScreen>
     });
     // Keep the screen on and immersive while ringing.
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    if (widget.preview) {
+      final ringtone = widget.previewAlarm?.ringtone ?? _alarm?.ringtone;
+      if (ringtone != null) {
+        SoundPreview.playRingtone(ringtone);
+      }
+    }
   }
 
   @override
   void dispose() {
+    if (widget.preview) {
+      SoundPreview.stop();
+    }
     _bg.dispose();
     _clock.cancel();
     _muteTimer?.cancel();
@@ -92,7 +102,10 @@ class _RingScreenState extends ConsumerState<RingScreen>
   }
 
   Future<void> _stopNative() async {
-    if (widget.preview) return;
+    if (widget.preview) {
+      await SoundPreview.stop();
+      return;
+    }
     await Alarm.stop(_nativeId);
   }
 
@@ -125,6 +138,7 @@ class _RingScreenState extends ConsumerState<RingScreen>
   /// it comes back even if this screen or the app is killed meanwhile.
   Future<void> _mute(UygAlarm alarm, int minutes) async {
     if (widget.preview) {
+      await SoundPreview.stop();
       _startMuteCountdown(minutes * 60);
       return;
     }
@@ -148,14 +162,28 @@ class _RingScreenState extends ConsumerState<RingScreen>
     _muteTimer = Timer.periodic(const Duration(seconds: 1), (tm) {
       if (!mounted) return tm.cancel();
       setState(() => _muteSeconds--);
-      if (_muteSeconds <= 0) tm.cancel();
+      if (_muteSeconds <= 0) {
+        tm.cancel();
+        if (widget.preview) {
+          final ringtone = widget.previewAlarm?.ringtone ?? _alarm?.ringtone;
+          if (ringtone != null) {
+            SoundPreview.playRingtone(ringtone);
+          }
+        }
+      }
     });
   }
 
   Future<void> _unmuteNow(UygAlarm alarm) async {
     _muteTimer?.cancel();
     setState(() => _muteSeconds = 0);
-    if (widget.preview) return;
+    if (widget.preview) {
+      final ringtone = widget.previewAlarm?.ringtone ?? _alarm?.ringtone;
+      if (ringtone != null) {
+        SoundPreview.playRingtone(ringtone);
+      }
+      return;
+    }
     // Re-ring immediately (min. native delay is applied by the scheduler).
     final t = ref.read(l10nProvider);
     await Alarm.stop(_nativeId);

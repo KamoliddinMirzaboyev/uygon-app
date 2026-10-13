@@ -4,7 +4,7 @@ typedef SystemSound = ({String title, String uri});
 
 /// The phone's own alarm / ringtone sounds (Android `RingtoneManager`).
 class SystemRingtones {
-  static const _channel = MethodChannel('uz.uygon/ringtones');
+  static const _channel = MethodChannel('uz.waky.app/ringtones');
 
   static Future<List<SystemSound>> list() async {
     final raw = await _channel.invokeListMethod<Map>('list') ?? const [];
@@ -20,10 +20,63 @@ class SystemRingtones {
       .invokeMethod<String>('copy', {'uri': uri, 'name': name}))!;
 }
 
+/// In-app audio preview for alarm ringtones.
+class SoundPreview {
+  static const _channel = MethodChannel('uz.waky.app/ringtones');
+
+  static Future<void> playAsset(String soundName) async {
+    try {
+      await _channel.invokeMethod('play', {'type': 'asset', 'value': soundName});
+    } catch (_) {}
+  }
+
+  static Future<void> playSystem() async {
+    try {
+      await _channel.invokeMethod('play', {'type': 'system'});
+    } catch (_) {}
+  }
+
+  static Future<void> playUri(String uri) async {
+    try {
+      await _channel.invokeMethod('play', {'type': 'uri', 'value': uri});
+    } catch (_) {}
+  }
+
+  static Future<void> playFile(String path) async {
+    try {
+      await _channel.invokeMethod('play', {'type': 'file', 'value': path});
+    } catch (_) {}
+  }
+
+  static Future<void> playRingtone(String ringtone) async {
+    if (ringtone == 'system') {
+      return playSystem();
+    } else if (ringtone.startsWith('asset:')) {
+      return playAsset(ringtone.substring('asset:'.length));
+    } else {
+      return playFile(ringtone);
+    }
+  }
+
+  static Future<void> stop() async {
+    try {
+      await _channel.invokeMethod('stop');
+    } catch (_) {}
+  }
+
+  static Future<bool> isPlaying() async {
+    try {
+      return (await _channel.invokeMethod<bool>('isPlaying')) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
 /// Opt-in "uninstall protection": registers the app as a device admin, so
 /// Android makes the user deactivate it in Settings before uninstalling.
 class UninstallProtection {
-  static const _channel = MethodChannel('uz.uygon/protection');
+  static const _channel = MethodChannel('uz.waky.app/protection');
 
   static Future<bool> isActive() async =>
       await _channel.invokeMethod<bool>('isActive') ?? false;
@@ -43,7 +96,7 @@ const kUninstallProtectionAvailable = bool.fromEnvironment(
 
 /// Short "ratchet" tick + haptic used by the time wheel.
 class UiFeedback {
-  static const _channel = MethodChannel('uz.uygon/feedback');
+  static const _channel = MethodChannel('uz.waky.app/feedback');
   static var _flip = false;
 
   static Future<void> tick() async {
@@ -60,7 +113,7 @@ class UiFeedback {
 
 /// Battery-optimisation state and settings shortcut.
 class SystemSettings {
-  static const _channel = MethodChannel('uz.uygon/system');
+  static const _channel = MethodChannel('uz.waky.app/system');
 
   static Future<bool> isUnrestricted() async =>
       await _channel.invokeMethod<bool>('batteryUnrestricted') ?? false;

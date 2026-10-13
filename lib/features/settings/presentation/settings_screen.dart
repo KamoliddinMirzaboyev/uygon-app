@@ -122,11 +122,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             children: [
               GroupRow(
                 title: t('language'),
-                value: s.language == 'uz' ? t('uzbek') : t('english'),
+                value: switch (s.language) {
+                  'uz' => t('uzbek'),
+                  'ru' => t('russian'),
+                  _ => t('english'),
+                },
                 onTap: () async {
                   final v = await _choose<String>(t('language'), [
-                    ('uz', t('uzbek')),
                     ('en', t('english')),
+                    ('ru', t('russian')),
+                    ('uz', t('uzbek')),
                   ], s.language);
                   if (v != null) ctl.update((x) => x.copyWith(language: v));
                 },

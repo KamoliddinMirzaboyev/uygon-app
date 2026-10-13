@@ -1,13 +1,13 @@
-# Uyg'on — Maxfiylik Siyosati (Privacy Policy)
+# Waky — Maxfiylik Siyosati (Privacy Policy)
 
 **Oxirgi yangilanish:** 2026-yil 12-oktabr
 
-Ushbu Maxfiylik Siyosati **"Uyg'on"** (paket nomi: `uz.uygon.uygon`) mobil ilovasidan foydalanishda foydalanuvchilarning maxfiyligi qanday ta'minlanishi haqida ma'lumot beradi.
+Ushbu Maxfiylik Siyosati **"Waky"** (paket nomi: `uz.waky.app`) mobil ilovasidan foydalanishda foydalanuvchilarning maxfiyligi qanday ta'minlanishi haqida ma'lumot beradi.
 
 ---
 
 ### 1. Umumiy qoidalar va Ma'lumotlarni yig'maslik
-"Uyg'on" ilovasi foydalanuvchilarning shaxsiy daxlsizligini to'liq hurmat qiladi.
+"Waky" ilovasi foydalanuvchilarning shaxsiy daxlsizligini to'liq hurmat qiladi.
 - **Ilova 100% oflayn ishlaydi.**
 - Ilovada hech qanday internet ulanishi (`android.permission.INTERNET`) ishlatilmaydi.
 - Foydalanuvchining shaxsiy ma'lumotlari, fotosuratlari, joylashuvi yoki kontaktlari serverlarga yuborilmaydi va uchinchi tomonlar bilan ulashilmaydi.
@@ -52,10 +52,10 @@ Ushbu Maxfiylik Siyosati bo'yicha savollaringiz bo'lsa, quyidagi manzil orqali b
 
 **Last updated:** October 12, 2026
 
-This Privacy Policy applies to the **"Uyg'on"** mobile application (package: `uz.uygon.uygon`).
+This Privacy Policy applies to the **"Waky"** mobile application (package: `uz.waky.app`).
 
 ### 1. Information Collection and Use
-- **100% Offline Application:** Uyg'on operates completely offline. It does not require or utilize the Internet permission (`android.permission.INTERNET`).
+- **100% Offline Application:** Waky operates completely offline. It does not require or utilize the Internet permission (`android.permission.INTERNET`).
 - **No Data Collection:** We do not collect, store, transmit, or share any personal information, usage analytics, or telemetry.
 
 ### 2. Device Permissions

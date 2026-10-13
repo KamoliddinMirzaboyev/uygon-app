@@ -12,14 +12,14 @@ import 'features/challenges/application/ring_listener.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
-class UygonApp extends ConsumerStatefulWidget {
-  const UygonApp({super.key});
+class WakyApp extends ConsumerStatefulWidget {
+  const WakyApp({super.key});
 
   @override
-  ConsumerState<UygonApp> createState() => _UygonAppState();
+  ConsumerState<WakyApp> createState() => _WakyAppState();
 }
 
-class _UygonAppState extends ConsumerState<UygonApp> {
+class _WakyAppState extends ConsumerState<WakyApp> {
   final RingListener _ring = RingListener(navigatorKey);
 
   @override

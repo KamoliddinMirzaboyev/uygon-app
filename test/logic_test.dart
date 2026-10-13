@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:uygon/features/alarms/application/alarm_scheduler.dart';
-import 'package:uygon/features/alarms/domain/uyg_alarm.dart';
-import 'package:uygon/features/challenges/application/math_generator.dart';
-import 'package:uygon/features/challenges/application/typing_sentences.dart';
-import 'package:uygon/features/challenges/domain/challenge_type.dart';
+import 'package:waky/features/alarms/application/alarm_scheduler.dart';
+import 'package:waky/features/alarms/domain/uyg_alarm.dart';
+import 'package:waky/features/challenges/application/math_generator.dart';
+import 'package:waky/features/challenges/application/typing_sentences.dart';
+import 'package:waky/features/challenges/domain/challenge_type.dart';
 
 void main() {
   test('math questions have correct, non-negative answers', () {

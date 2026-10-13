@@ -8,7 +8,7 @@ Loyihangiz Google Play Market talablariga 100% to'liq tayyorlandi. Quyida Google
 
 | Fayl | Joylashuvi | Tavsifi |
 | :--- | :--- | :--- |
-| **Android App Bundle (.aab)** | `build/app/outputs/bundle/playRelease/app-play-release.aab` | Google Play uchun imzolangan va optimallashtirilgan asosiy fayl (~69 MB) |
+| **Android App Bundle (.aab)** | `Waky-play-release.aab` *(Root papkada)* | Google Play uchun imzolangan va optimallashtirilgan asosiy fayl (~66 MB) |
 | **Ilova belgisi (App Icon)** | `playstore/icon_512.png` | 512x512 px, 32-bit PNG |
 | **Bosh banner (Feature Graphic)** | `playstore/feature_graphic_1024x500.png` | 1024x500 px, Google Play vitrinasi uchun rasmiy banner |
 | **Maxfiylik Siyosati (HTML)** | `playstore/privacy_policy.html` | Google Play talab qiladigan Privacy Policy (veb-saytga yoki GitHub Pages'ga qo'yish uchun) |

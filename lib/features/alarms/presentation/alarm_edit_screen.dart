@@ -257,44 +257,167 @@ class _AlarmEditScreenState extends ConsumerState<AlarmEditScreen> {
 
   Future<void> _pickRingtone() async {
     final t = ref.read(l10nProvider);
-    final choice = await showModalBottomSheet<String>(
+    String currentRingtone = _a.ringtone;
+    String? playingRingtone;
+
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (c) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.phone_android),
-              title: Text(t('systemDefault')),
-              selected: _a.ringtone == kSystemSound,
-              onTap: () => Navigator.pop(c, kSystemSound),
-            ),
-            for (final s in kBuiltInSounds)
-              ListTile(
-                leading: const Icon(Icons.volume_up),
-                title: Text(t('sound_$s')),
-                selected: _a.ringtone == '$kBuiltInPrefix$s',
-                onTap: () => Navigator.pop(c, '$kBuiltInPrefix$s'),
+      isScrollControlled: true,
+      builder: (c) => StatefulBuilder(
+        builder: (context, setModalState) {
+          void togglePlay(String ringtoneKey) async {
+            if (playingRingtone == ringtoneKey) {
+              await SoundPreview.stop();
+              setModalState(() => playingRingtone = null);
+            } else {
+              setModalState(() {
+                currentRingtone = ringtoneKey;
+                playingRingtone = ringtoneKey;
+              });
+              _set(_a.copyWith(ringtone: ringtoneKey));
+              await SoundPreview.playRingtone(ringtoneKey);
+            }
+          }
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          t('ringtone'),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            t('done'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.phone_android),
+                    title: Text(t('systemDefault')),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            playingRingtone == kSystemSound
+                                ? Icons.stop_circle_rounded
+                                : Icons.play_circle_outline_rounded,
+                            color: playingRingtone == kSystemSound
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                          onPressed: () => togglePlay(kSystemSound),
+                        ),
+                        if (currentRingtone == kSystemSound)
+                          Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
+                      ],
+                    ),
+                    selected: currentRingtone == kSystemSound,
+                    onTap: () => togglePlay(kSystemSound),
+                  ),
+                  for (final s in kBuiltInSounds) ...[
+                    ListTile(
+                      leading: const Icon(Icons.volume_up),
+                      title: Text(t('sound_$s')),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              playingRingtone == '$kBuiltInPrefix$s'
+                                  ? Icons.stop_circle_rounded
+                                  : Icons.play_circle_outline_rounded,
+                              color: playingRingtone == '$kBuiltInPrefix$s'
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            onPressed: () => togglePlay('$kBuiltInPrefix$s'),
+                          ),
+                          if (currentRingtone == '$kBuiltInPrefix$s')
+                            Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                      selected: currentRingtone == '$kBuiltInPrefix$s',
+                      onTap: () => togglePlay('$kBuiltInPrefix$s'),
+                    ),
+                  ],
+                  if (!currentRingtone.startsWith(kBuiltInPrefix) &&
+                      currentRingtone != kSystemSound)
+                    ListTile(
+                      leading: const Icon(Icons.music_note),
+                      title: Text(_ringtoneName(t)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              playingRingtone == currentRingtone
+                                  ? Icons.stop_circle_rounded
+                                  : Icons.play_circle_outline_rounded,
+                              color: playingRingtone == currentRingtone
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            onPressed: () => togglePlay(currentRingtone),
+                          ),
+                          Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                      selected: true,
+                      onTap: () => togglePlay(currentRingtone),
+                    ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.library_music),
+                    title: Text(t('phoneRingtones')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      await SoundPreview.stop();
+                      if (context.mounted) Navigator.pop(context);
+                      await _pickPhoneSound(t);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.folder_open),
+                    title: Text(t('customFile')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      await SoundPreview.stop();
+                      if (context.mounted) Navigator.pop(context);
+                      await _pickCustomSound();
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-            ListTile(
-              leading: const Icon(Icons.library_music),
-              title: Text(t('phoneRingtones')),
-              onTap: () => Navigator.pop(c, 'phone'),
             ),
-            ListTile(
-              leading: const Icon(Icons.folder_open),
-              title: Text(t('customFile')),
-              onTap: () => Navigator.pop(c, 'custom'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
-    if (choice == null) return;
-    if (choice == 'phone') return _pickPhoneSound(t);
-    if (choice != 'custom') return _set(_a.copyWith(ringtone: choice));
+    await SoundPreview.stop();
+  }
 
+  Future<void> _pickCustomSound() async {
     final picked = await FilePicker.pickFile(type: FileType.audio);
     final path = picked?.path;
     if (path == null) return;
@@ -304,45 +427,118 @@ class _AlarmEditScreenState extends ConsumerState<AlarmEditScreen> {
     );
     await dir.create(recursive: true);
     final name = '${_a.id}_${p.basename(path)}';
-    await File(path).copy(p.join(dir.path, name));
-    _set(_a.copyWith(ringtone: p.join('ringtones', name)));
+    final targetPath = p.join(dir.path, name);
+    await File(path).copy(targetPath);
+    final rel = p.join('ringtones', name);
+    _set(_a.copyWith(ringtone: rel));
+    await SoundPreview.playFile(targetPath);
   }
 
   Future<void> _pickPhoneSound(L10n t) async {
     final sounds = await SystemRingtones.list();
     if (!mounted) return;
-    final picked = await showModalBottomSheet<SystemSound>(
+    SystemSound? selectedSound;
+    String? playingUri;
+
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (c) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.7,
-        builder: (_, scroll) => Column(
-          children: [
-            Text(
-              t('phoneRingtonesTitle'),
-              style: Theme.of(c).textTheme.titleMedium,
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: scroll,
-                itemCount: sounds.length,
-                itemBuilder: (_, i) => ListTile(
-                  leading: const Icon(Icons.music_note),
-                  title: Text(sounds[i].title),
-                  onTap: () => Navigator.pop(c, sounds[i]),
+      builder: (c) => StatefulBuilder(
+        builder: (context, setModalState) {
+          void togglePlay(SystemSound sound) async {
+            if (playingUri == sound.uri) {
+              await SoundPreview.stop();
+              setModalState(() => playingUri = null);
+            } else {
+              setModalState(() {
+                selectedSound = sound;
+                playingUri = sound.uri;
+              });
+              await SoundPreview.playUri(sound.uri);
+            }
+          }
+
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            minChildSize: 0.4,
+            maxChildSize: 0.9,
+            builder: (_, scroll) => Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        t('phoneRingtonesTitle'),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          t('done'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scroll,
+                    itemCount: sounds.length,
+                    itemBuilder: (_, i) {
+                      final sound = sounds[i];
+                      final isSelected = selectedSound?.uri == sound.uri;
+                      final isPlaying = playingUri == sound.uri;
+                      return ListTile(
+                        leading: const Icon(Icons.music_note),
+                        title: Text(sound.title),
+                        selected: isSelected,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                isPlaying
+                                    ? Icons.stop_circle_rounded
+                                    : Icons.play_circle_outline_rounded,
+                                color: isPlaying
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
+                              onPressed: () => togglePlay(sound),
+                            ),
+                            if (isSelected)
+                              Icon(Icons.check,
+                                  color: Theme.of(context).colorScheme.primary),
+                          ],
+                        ),
+                        onTap: () => togglePlay(sound),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
-    if (picked == null) return;
-    final safe = picked.title.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_');
-    final rel = await SystemRingtones.copy(picked.uri, 'sys_${_a.id}_$safe');
-    _set(_a.copyWith(ringtone: rel));
+    await SoundPreview.stop();
+    if (selectedSound != null) {
+      final safe = selectedSound!.title.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '_');
+      final rel = await SystemRingtones.copy(selectedSound!.uri, 'sys_${_a.id}_$safe');
+      _set(_a.copyWith(ringtone: rel));
+    }
   }
 
   String _ringtoneName(L10n t) {

@@ -9,7 +9,9 @@ class SettingsController extends Notifier<AppSettings> {
   @override
   AppSettings build() {
     final raw = Storage.settings.get(_key);
-    return raw is Map ? AppSettings.fromJson(raw) : const AppSettings();
+    return raw is Map
+        ? AppSettings.fromJson(raw)
+        : AppSettings(language: AppSettings.defaultLanguage());
   }
 
   void update(AppSettings Function(AppSettings) change) {

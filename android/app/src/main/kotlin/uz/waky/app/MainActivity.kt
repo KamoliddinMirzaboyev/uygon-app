@@ -1,7 +1,9 @@
-package uz.uygon.uygon
+package uz.waky.app
 
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.media.SoundPool
 import android.app.AlarmManager
@@ -17,11 +19,124 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private var soundPool: SoundPool? = null
     private var tickId = 0
+    private var previewPlayer: MediaPlayer? = null
+    private var previewRingtone: Ringtone? = null
+
+    override fun onPause() {
+        stopPreview()
+        super.onPause()
+    }
 
     override fun onDestroy() {
+        stopPreview()
         soundPool?.release()
         soundPool = null
         super.onDestroy()
+    }
+
+    private fun stopPreview() {
+        try {
+            previewPlayer?.let {
+                if (it.isPlaying) {
+                    it.stop()
+                }
+                it.reset()
+                it.release()
+            }
+        } catch (_: Exception) {}
+        previewPlayer = null
+
+        try {
+            previewRingtone?.stop()
+        } catch (_: Exception) {}
+        previewRingtone = null
+    }
+
+    private fun playPreview(type: String?, value: String?) {
+        stopPreview()
+        try {
+            when (type) {
+                "system" -> {
+                    val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    if (uri != null) {
+                        playUri(uri)
+                    }
+                }
+                "uri" -> {
+                    if (!value.isNullOrEmpty()) {
+                        playUri(Uri.parse(value))
+                    }
+                }
+                "asset" -> {
+                    if (!value.isNullOrEmpty()) {
+                        val assetPath = "flutter_assets/assets/sounds/$value.wav"
+                        val tempFile = File(cacheDir, "preview_sound.wav")
+                        assets.open(assetPath).use { input ->
+                            tempFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        playFilePath(tempFile.absolutePath)
+                    }
+                }
+                "file" -> {
+                    if (!value.isNullOrEmpty()) {
+                        val file = if (value.startsWith("/")) {
+                            File(value)
+                        } else {
+                            File(filesDir.parent, "app_flutter/$value")
+                        }
+                        if (file.exists()) {
+                            playFilePath(file.absolutePath)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun playUri(uri: Uri) {
+        try {
+            previewPlayer = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                setDataSource(applicationContext, uri)
+                isLooping = true
+                prepare()
+                start()
+            }
+        } catch (e: Exception) {
+            try {
+                previewRingtone = RingtoneManager.getRingtone(applicationContext, uri)?.apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        isLooping = true
+                    }
+                    play()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun playFilePath(path: String) {
+        previewPlayer = MediaPlayer().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            setDataSource(path)
+            isLooping = true
+            prepare()
+            start()
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -40,7 +155,7 @@ class MainActivity : FlutterActivity() {
             .build()
             .also { tickId = it.load(this, R.raw.tick, 1) }
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.uygon/feedback")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.waky.app/feedback")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "tick" -> {
@@ -55,7 +170,7 @@ class MainActivity : FlutterActivity() {
         // Battery-optimisation state without the restricted
         // REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permission: we only open the
         // system settings list and read the state.
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.uygon/system")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.waky.app/system")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "batteryUnrestricted" -> {
@@ -89,7 +204,7 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.uygon/ringtones")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.waky.app/ringtones")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     // [{title, uri}] of the phone's alarm + ringtone sounds.
@@ -125,10 +240,24 @@ class MainActivity : FlutterActivity() {
                             result.error("copy_failed", e.message, null)
                         }
                     }
+                    "play" -> {
+                        val type = call.argument<String>("type")
+                        val value = call.argument<String>("value")
+                        playPreview(type, value)
+                        result.success(null)
+                    }
+                    "stop" -> {
+                        stopPreview()
+                        result.success(null)
+                    }
+                    "isPlaying" -> {
+                        val playing = (previewPlayer?.isPlaying == true) || (previewRingtone?.isPlaying == true)
+                        result.success(playing)
+                    }
                     else -> result.notImplemented()
                 }
             }
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.uygon/protection")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "uz.waky.app/protection")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "isActive" -> result.success(false)

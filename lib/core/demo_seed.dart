@@ -47,7 +47,7 @@ Future<void> seedDemoData() async {
       label: 'Hammom',
       enabled: false,
       challenge: ChallengeType.qr,
-      scanValue: 'uygon-demo',
+      scanValue: 'waky-demo',
     ),
   ];
   for (final a in alarms) {

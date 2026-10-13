@@ -30,7 +30,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
 
     <application
-        android:label="Uyg'on"
+        android:label="Waky"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
